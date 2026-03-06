@@ -1,0 +1,66 @@
+---
+# Retry delay in seconds used between first and second attempt of server/agent role execution.
+ansible_k3s_retry_delay_seconds: 10
+
+# Whether to reconcile UFW rules before and after running K3s roles.
+ansible_k3s_manage_ufw: true
+
+# Source CIDRs allowed to reach K3s node/API/etcd ports.
+ansible_k3s_firewall_source_cidrs:
+  - 10.20.40.0/24
+
+# Inter-node ports opened on all K3s nodes.
+ansible_k3s_firewall_port_rules_common:
+  - port: "5001"
+    proto: tcp
+  - port: "8472"
+    proto: udp
+  - port: "10250"
+    proto: tcp
+  - port: "51820"
+    proto: udp
+  - port: "51821"
+    proto: udp
+
+# API server port opened on server nodes.
+ansible_k3s_firewall_port_rules_server:
+  - port: "6443"
+    proto: tcp
+
+# etcd ports opened on server nodes when running embedded HA etcd.
+ansible_k3s_firewall_port_rules_etcd:
+  - port: "2379:2381"
+    proto: tcp
+
+# Group names expected by k3s.orchestration roles.
+server_group: server
+agent_group: agent
+
+# K3s version passed to upstream roles.
+k3s_version: v1.31.12+k3s1
+
+# Cluster token for server/agent join.
+# token: "REPLACE_WITH_K3S_CLUSTER_TOKEN"
+
+# Per-node IP advertised by K3s. Override per host as needed.
+k3s_node_ip: "{{ ansible_default_ipv4.address }}"
+
+# Interface passed to flannel.
+k3s_network_interface: eth0
+
+# API endpoint used by joining servers/agents.
+api_port: 6443
+api_endpoint: "{{ hostvars[groups[server_group][0]].k3s_node_ip }}"
+
+# Pod and service CIDRs.
+k3s_cluster_cidr: 10.42.0.0/16
+k3s_service_cidr: 10.43.0.0/16
+
+# K3s server config file content.
+server_config_yaml: |
+  cluster-cidr: {{ k3s_cluster_cidr }}
+  service-cidr: {{ k3s_service_cidr }}
+
+# Additional K3s args passed by the upstream collection roles.
+extra_server_args: "--node-ip={{ k3s_node_ip }} --flannel-iface={{ k3s_network_interface }}"
+extra_agent_args: "--node-ip={{ k3s_node_ip }} --flannel-iface={{ k3s_network_interface }}"

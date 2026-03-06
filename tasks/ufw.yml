@@ -1,0 +1,99 @@
+---
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+- name: Get UFW status
+  ansible.builtin.command:
+    cmd: ufw status
+  changed_when: false
+  register: k3s_ufw_status
+  when:
+    - ansible_facts.services['ufw'] is defined
+    - ansible_facts.services['ufw'].state == 'running'
+
+- name: Remove broad K3s inter-node rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    delete: true
+  loop: "{{ ansible_k3s_firewall_port_rules_common }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
+
+- name: Remove broad K3s API rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    delete: true
+  loop: "{{ ansible_k3s_firewall_port_rules_server }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
+    - inventory_hostname in (groups[server_group] | default([]))
+
+- name: Remove broad K3s etcd rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    delete: true
+  loop: "{{ ansible_k3s_firewall_port_rules_etcd }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
+    - inventory_hostname in (groups[server_group] | default([]))
+    - (groups[server_group] | default([]) | length) > 1
+
+- name: Allow K3s inter-node ports from configured source CIDRs
+  community.general.ufw:
+    rule: allow
+    src: "{{ item.0 }}"
+    port: "{{ item.1.port }}"
+    proto: "{{ item.1.proto }}"
+    comment: "k3s-mesh"
+  loop: "{{ ansible_k3s_firewall_source_cidrs | product(ansible_k3s_firewall_port_rules_common) | list }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
+
+- name: Allow K3s API port from configured source CIDRs
+  community.general.ufw:
+    rule: allow
+    src: "{{ item.0 }}"
+    port: "{{ item.1.port }}"
+    proto: "{{ item.1.proto }}"
+    comment: "k3s-api"
+  loop: "{{ ansible_k3s_firewall_source_cidrs | product(ansible_k3s_firewall_port_rules_server) | list }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
+    - inventory_hostname in (groups[server_group] | default([]))
+
+- name: Allow K3s etcd ports from configured source CIDRs
+  community.general.ufw:
+    rule: allow
+    src: "{{ item.0 }}"
+    port: "{{ item.1.port }}"
+    proto: "{{ item.1.proto }}"
+    comment: "k3s-etcd"
+  loop: "{{ ansible_k3s_firewall_source_cidrs | product(ansible_k3s_firewall_port_rules_etcd) | list }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
+    - inventory_hostname in (groups[server_group] | default([]))
+    - (groups[server_group] | default([]) | length) > 1
+
+- name: Allow K3s pod and service CIDRs
+  community.general.ufw:
+    rule: allow
+    src: "{{ item }}"
+    comment: "k3s-cidr"
+  loop:
+    - "{{ k3s_cluster_cidr }}"
+    - "{{ k3s_service_cidr }}"
+  when:
+    - k3s_ufw_status is defined
+    - "'Status: active' in k3s_ufw_status.stdout"
