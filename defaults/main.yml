@@ -1,16 +1,16 @@
 ---
 # Retry delay in seconds used between first and second attempt of server/agent role execution.
-ansible_k3s_retry_delay_seconds: 10
+k3s_retry_delay_seconds: 10
 
 # Whether to reconcile UFW rules before and after running K3s roles.
-ansible_k3s_manage_ufw: true
+k3s_manage_ufw: true
 
 # Source CIDRs allowed to reach K3s node/API/etcd ports.
-ansible_k3s_firewall_source_cidrs:
+k3s_firewall_source_cidrs:
   - 10.20.40.0/24
 
 # Inter-node ports opened on all K3s nodes.
-ansible_k3s_firewall_port_rules_common:
+k3s_firewall_port_rules_common:
   - port: "5001"
     proto: tcp
   - port: "8472"
@@ -23,12 +23,12 @@ ansible_k3s_firewall_port_rules_common:
     proto: udp
 
 # API server port opened on server nodes.
-ansible_k3s_firewall_port_rules_server:
+k3s_firewall_port_rules_server:
   - port: "6443"
     proto: tcp
 
 # etcd ports opened on server nodes when running embedded HA etcd.
-ansible_k3s_firewall_port_rules_etcd:
+k3s_firewall_port_rules_etcd:
   - port: "2379:2381"
     proto: tcp
 

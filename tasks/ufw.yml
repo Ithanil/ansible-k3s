@@ -17,7 +17,7 @@
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
     delete: true
-  loop: "{{ ansible_k3s_firewall_port_rules_common }}"
+  loop: "{{ k3s_firewall_port_rules_common }}"
   when:
     - k3s_ufw_status is defined
     - "'Status: active' in k3s_ufw_status.stdout"
@@ -28,7 +28,7 @@
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
     delete: true
-  loop: "{{ ansible_k3s_firewall_port_rules_server }}"
+  loop: "{{ k3s_firewall_port_rules_server }}"
   when:
     - k3s_ufw_status is defined
     - "'Status: active' in k3s_ufw_status.stdout"
@@ -40,7 +40,7 @@
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
     delete: true
-  loop: "{{ ansible_k3s_firewall_port_rules_etcd }}"
+  loop: "{{ k3s_firewall_port_rules_etcd }}"
   when:
     - k3s_ufw_status is defined
     - "'Status: active' in k3s_ufw_status.stdout"
@@ -54,7 +54,7 @@
     port: "{{ item.1.port }}"
     proto: "{{ item.1.proto }}"
     comment: "k3s-mesh"
-  loop: "{{ ansible_k3s_firewall_source_cidrs | product(ansible_k3s_firewall_port_rules_common) | list }}"
+  loop: "{{ k3s_firewall_source_cidrs | product(k3s_firewall_port_rules_common) | list }}"
   when:
     - k3s_ufw_status is defined
     - "'Status: active' in k3s_ufw_status.stdout"
@@ -66,7 +66,7 @@
     port: "{{ item.1.port }}"
     proto: "{{ item.1.proto }}"
     comment: "k3s-api"
-  loop: "{{ ansible_k3s_firewall_source_cidrs | product(ansible_k3s_firewall_port_rules_server) | list }}"
+  loop: "{{ k3s_firewall_source_cidrs | product(k3s_firewall_port_rules_server) | list }}"
   when:
     - k3s_ufw_status is defined
     - "'Status: active' in k3s_ufw_status.stdout"
@@ -79,7 +79,7 @@
     port: "{{ item.1.port }}"
     proto: "{{ item.1.proto }}"
     comment: "k3s-etcd"
-  loop: "{{ ansible_k3s_firewall_source_cidrs | product(ansible_k3s_firewall_port_rules_etcd) | list }}"
+  loop: "{{ k3s_firewall_source_cidrs | product(k3s_firewall_port_rules_etcd) | list }}"
   when:
     - k3s_ufw_status is defined
     - "'Status: active' in k3s_ufw_status.stdout"
