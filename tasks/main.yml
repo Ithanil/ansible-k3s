@@ -3,40 +3,42 @@
   ansible.builtin.include_tasks: ufw.yml
   when: k3s_manage_ufw | bool
 
-- name: Run K3s prerequisite setup
-  ansible.builtin.include_role:
-    name: k3s.orchestration.prereq
-
-- name: Setup K3S server with one retry on failure
-  when: inventory_hostname in (groups[server_group] | default([]))
+- name: Run K3s provisioning
   block:
-    - name: Setup K3S server (first attempt)
+    - name: Run K3s prerequisite setup
       ansible.builtin.include_role:
-        name: k3s.orchestration.k3s_server
-  rescue:
-    - name: Pause before retrying K3S server setup
-      ansible.builtin.pause:
-        seconds: "{{ k3s_retry_delay_seconds }}"
+        name: k3s.orchestration.prereq
 
-    - name: Setup K3S server (retry)
-      ansible.builtin.include_role:
-        name: k3s.orchestration.k3s_server
+    - name: Setup K3S server with one retry on failure
+      when: inventory_hostname in (groups[server_group] | default([]))
+      block:
+        - name: Setup K3S server (first attempt)
+          ansible.builtin.include_role:
+            name: k3s.orchestration.k3s_server
+      rescue:
+        - name: Pause before retrying K3S server setup
+          ansible.builtin.pause:
+            seconds: "{{ k3s_retry_delay_seconds }}"
 
-- name: Setup K3S agent with one retry on failure
-  when: inventory_hostname in (groups[agent_group] | default([]))
-  block:
-    - name: Setup K3S agent (first attempt)
-      ansible.builtin.include_role:
-        name: k3s.orchestration.k3s_agent
-  rescue:
-    - name: Pause before retrying K3S agent setup
-      ansible.builtin.pause:
-        seconds: "{{ k3s_retry_delay_seconds }}"
+        - name: Setup K3S server (retry)
+          ansible.builtin.include_role:
+            name: k3s.orchestration.k3s_server
 
-    - name: Setup K3S agent (retry)
-      ansible.builtin.include_role:
-        name: k3s.orchestration.k3s_agent
+    - name: Setup K3S agent with one retry on failure
+      when: inventory_hostname in (groups[agent_group] | default([]))
+      block:
+        - name: Setup K3S agent (first attempt)
+          ansible.builtin.include_role:
+            name: k3s.orchestration.k3s_agent
+      rescue:
+        - name: Pause before retrying K3S agent setup
+          ansible.builtin.pause:
+            seconds: "{{ k3s_retry_delay_seconds }}"
 
-- name: Apply UFW rules after K3s provisioning
-  ansible.builtin.include_tasks: ufw.yml
-  when: k3s_manage_ufw | bool
+        - name: Setup K3S agent (retry)
+          ansible.builtin.include_role:
+            name: k3s.orchestration.k3s_agent
+  always:
+    - name: Apply UFW rules after K3s provisioning
+      ansible.builtin.include_tasks: ufw.yml
+      when: k3s_manage_ufw | bool
