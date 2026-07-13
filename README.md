@@ -1,7 +1,8 @@
-# K3s Setup Role
+# K3s Role
 
-This role provisions K3s using upstream `k3s.orchestration` roles and applies
-source-restricted UFW rules for K3s traffic before and after provisioning.
+This role provisions and upgrades K3s using upstream `k3s.orchestration` roles.
+It also applies source-restricted UFW rules for K3s traffic before and after
+provisioning.
 
 ## Dependency
 
@@ -18,6 +19,8 @@ and set `collections_path = ./collections:~/.ansible/collections:/usr/share/ansi
 - Runs `k3s.orchestration.k3s_server` with one retry on failure
 - Runs `k3s.orchestration.k3s_agent` with one retry on failure
 - Reconciles UFW rules again after provisioning
+- Validates upgrade configuration before K3s services can be stopped
+- Runs `k3s.orchestration.k3s_upgrade` using the role's shared defaults
 
 ## Expected Inventory Groups
 
@@ -25,7 +28,7 @@ and set `collections_path = ./collections:~/.ansible/collections:/usr/share/ansi
 - `server` for K3s server/control-plane nodes
 - `agent` for K3s agent nodes
 
-## Usage
+## Provisioning
 
 ```yaml
 - name: Setup K3s cluster
@@ -34,4 +37,31 @@ and set `collections_path = ./collections:~/.ansible/collections:/usr/share/ansi
     - name: Setup K3s
       ansible.builtin.include_role:
         name: ansible-k3s
+```
+
+## Upgrading
+
+Use the `upgrade` task entrypoint so upgrades receive the same defaults as
+provisioning. The calling playbook remains responsible for coordinating node
+order; upgrade control-plane nodes one at a time.
+
+```yaml
+- name: Upgrade K3s servers
+  hosts: server
+  become: true
+  serial: 1
+  tasks:
+    - name: Upgrade K3s server
+      ansible.builtin.include_role:
+        name: ansible-k3s
+        tasks_from: upgrade
+
+- name: Upgrade K3s agents
+  hosts: agent
+  become: true
+  tasks:
+    - name: Upgrade K3s agent
+      ansible.builtin.include_role:
+        name: ansible-k3s
+        tasks_from: upgrade
 ```

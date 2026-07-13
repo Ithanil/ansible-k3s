@@ -1,0 +1,16 @@
+---
+- name: Validate K3s upgrade configuration
+  ansible.builtin.assert:
+    that:
+      - (groups[server_group] | default([]) | length) > 0
+      - inventory_hostname in ((groups[server_group] | default([])) + (groups[agent_group] | default([])))
+      - (k3s_version | default('') | string | length) > 0
+      - (api_endpoint | default('') | string | length) > 0
+      - (api_port | int) > 0
+    fail_msg: >-
+      K3s upgrade configuration is incomplete. Check the server and agent groups,
+      k3s_version, api_endpoint, and api_port.
+
+- name: Run K3s upgrade
+  ansible.builtin.include_role:
+    name: k3s.orchestration.k3s_upgrade
