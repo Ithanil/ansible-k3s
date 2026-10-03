@@ -11,6 +11,9 @@
       K3s upgrade configuration is incomplete. Check the server and agent groups,
       k3s_version, api_endpoint, and api_port.
 
+- name: Configure native kubelet image garbage collection
+  ansible.builtin.import_tasks: image_gc.yml
+
 - name: Run K3s upgrade
   ansible.builtin.include_role:
     name: k3s.orchestration.k3s_upgrade

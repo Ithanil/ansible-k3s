@@ -1,4 +1,7 @@
 ---
+- name: Configure native kubelet image garbage collection
+  ansible.builtin.import_tasks: image_gc.yml
+
 - name: Apply UFW rules before K3s provisioning
   ansible.builtin.include_tasks: ufw.yml
   when: k3s_manage_ufw | bool

@@ -5,6 +5,15 @@ k3s_retry_delay_seconds: 10
 # Whether to reconcile UFW rules before and after running K3s roles.
 k3s_manage_ufw: true
 
+# Opt in to native kubelet image garbage collection configuration (K3s >= 1.32).
+# Disabling management leaves any existing drop-in unchanged.
+k3s_manage_image_gc: false
+k3s_image_gc_high_threshold_percent: 85
+k3s_image_gc_low_threshold_percent: 80
+k3s_image_gc_minimum_age_minutes: 2
+# Zero disables age-based collection; disk-pressure collection remains enabled.
+k3s_image_gc_maximum_age_hours: 0
+
 # Source CIDRs allowed to reach K3s node/API/etcd ports.
 k3s_firewall_source_cidrs:
   - 10.20.40.0/24

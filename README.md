@@ -22,6 +22,13 @@ and set `collections_path = ./collections:~/.ansible/collections:/usr/share/ansi
 - Validates upgrade configuration before K3s services can be stopped
 - Runs `k3s.orchestration.k3s_upgrade` using the role's shared defaults
 
+## Native image garbage collection
+
+You may opt in to deploying a GC config drop-in with `k3s_manage_image_gc: true`.
+Corresponding variables are documented with their defaults in `defaults/main.yml`.
+The drop-in file will be deployed to
+`/var/lib/rancher/k3s/agent/etc/kubelet.conf.d/30-image-gc.conf`.
+
 ## Expected Inventory Groups
 
 - `k3s_cluster` for all K3s nodes

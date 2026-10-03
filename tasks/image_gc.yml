@@ -1,0 +1,52 @@
+---
+- name: Manage native kubelet image garbage collection policy
+  when: k3s_manage_image_gc | bool
+  vars:
+    k3s_image_gc_root_dir: /var/lib/rancher/k3s/agent/etc/kubelet.conf.d
+    k3s_image_gc_template_dir: "{{ role_path }}/templates{{ k3s_image_gc_root_dir }}"
+  block:
+    - name: Validate image garbage collection configuration
+      ansible.builtin.assert:
+        that:
+          - (k3s_version | regex_replace('^v', '') | split('+') | first) is version('1.32.0', '>=')
+          - k3s_image_gc_high_threshold_percent is integer
+          - k3s_image_gc_low_threshold_percent is integer
+          - k3s_image_gc_minimum_age_minutes is integer
+          - k3s_image_gc_maximum_age_hours is integer
+          - k3s_image_gc_low_threshold_percent >= 0
+          - k3s_image_gc_high_threshold_percent <= 100
+          - k3s_image_gc_low_threshold_percent < k3s_image_gc_high_threshold_percent
+          - k3s_image_gc_minimum_age_minutes >= 0
+          - k3s_image_gc_maximum_age_hours >= 0
+          - >-
+            k3s_image_gc_maximum_age_hours == 0
+            or k3s_image_gc_maximum_age_hours * 60 > k3s_image_gc_minimum_age_minutes
+        fail_msg: >-
+          Image GC requires K3s >= 1.32 and integer thresholds/ages:
+          0 <= low < high <= 100, minimum age >= 0, and maximum age either zero
+          (disabled) or greater than minimum age.
+        quiet: true
+
+    - name: Create kubelet configuration drop-in directory
+      ansible.builtin.file:
+        path: "{{ k3s_image_gc_root_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render kubelet image garbage collection policy
+      ansible.builtin.template:
+        src: "{{ k3s_image_gc_template_dir }}/30-image-gc.conf.j2"
+        dest: "{{ k3s_image_gc_root_dir }}/30-image-gc.conf"
+        owner: root
+        group: root
+        mode: "0644"
+      register: k3s_image_gc_configuration
+
+    - name: Report pending activation of image garbage collection settings
+      ansible.builtin.debug:
+        msg: >-
+          Kubelet image GC settings were written. They take effect on the next
+          K3s start; coordinate restarts through the calling lifecycle procedure.
+      when: k3s_image_gc_configuration.changed
